@@ -1,0 +1,5 @@
+archive
+src/__pycache__
+src/modules/__pycache__
+notebooks
+data
