@@ -2,22 +2,20 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf 
 
-def build_model(normalizer,hidden_layers,units,activation,dropout,learning_rate):
+def build_model(normalizer,hidden_layers,units,dropout,learning_rate):
 	'''
-	TODO
+	Build and compile tensorflow multi-layer perceptron.
 
-	:param normalizer: TODO
-	:type normalizer: TODO
-	:param hidden_layers: TODO
-	:type hidden_layers: TODO
-	:param units: TODO
-	:type units: TODO
-	:param activation: TODO
-	:type activation: TODO
-	:param dropout: TODO
-	:type dropout: TODO
-	:returns: TODO
-	:rtype: TODO
+	:param normalizer: Tensorflow normalization layer.
+	:type normalizer: keras.layers.preprocessing.normalization.Normalization
+	:param hidden_layers: Number of hidden layers to include
+	:type hidden_layers: int
+	:param units: List defining the number of neurons for each successive layer.
+	:type units: list (int)
+	:param dropout: List defining the training dropout rate for each successive layer.
+	:type dropout: list (float)
+	:returns: Tensorflow model
+	:rtype: keras.engine.sequential.Sequential
 	'''
 
 	# initialize model
@@ -28,7 +26,7 @@ def build_model(normalizer,hidden_layers,units,activation,dropout,learning_rate)
 
 	# add hidden layers	
 	for i in range(hidden_layers):
-		model.add(tf.keras.layers.Dense(units=units[i],activation=activation))
+		model.add(tf.keras.layers.Dense(units=units[i],activation='relu'))
 		model.add(tf.keras.layers.Dropout(rate=dropout[i]))
 	
 	# add output layer
@@ -44,7 +42,15 @@ def build_model(normalizer,hidden_layers,units,activation,dropout,learning_rate)
 
 def split_data(processed_data):
 	'''
-	TODO
+	Split data into train, validation, and test dataset. 
+	To include data spanning the whole time range in each 
+	dataset while ensuring correct seasonal distributions,
+	months are shuffled between years creating a 50/25/25 split.
+
+	:param processed_data: Processed data with datetime index.
+	:type processed_data: pd.DataFrame
+	:returns: Train, validation, and test datasets.
+	:rtype: tuple (pd.DataFrame)
 	'''
 
 	# initialize dataset
@@ -74,10 +80,10 @@ def split_features(dataset):
 	'''
 	Return features and labels.
 
-	:param dataset: TODO
-	:type dataset: TODO
-	:returns: TODO
-	:rtype: TODO
+	:param dataset: Dataset with demand labels in column 'D'.
+	:type dataset: pd.DataFrame
+	:returns: Features and labels as separate DataFrames.
+	:rtype: tuple (pd.DataFrame)
 	'''
 	features = dataset.copy()
 	labels = features.pop('D')
@@ -86,7 +92,12 @@ def split_features(dataset):
 
 def get_normalizer(train_features):
 	'''
-	TODO
+	Return a tensor flow normalization layer for a set of features
+
+	:param train_features: Features dataset to fit.
+	:type train_features: pd.DataFrame or np.ndarrary
+	:returns: Normalization layer
+	:rtype: keras.layers.preprocessing.normalization.Normalization
 	'''
 	normalizer = tf.keras.layers.Normalization(axis=-1)
 	normalizer.adapt(np.array(train_features))
@@ -94,16 +105,31 @@ def get_normalizer(train_features):
 	return normalizer
 
 def train_model(model, train_features, train_labels, val_features, val_labels):
+	'''
+	Trains model for 5000 epochs (with early stopping decided using validation data).
+
+	:param model: Model to train.
+	:type model: keras.engine.sequential.Sequential
+	:param train_features: Training features compatible with model architecture.
+	:type train_features: pd.DataFrame
+	:param train_labels: Training labels compatible with model architecture.
+	:type train_labels: pd.DataFrame
+	:param val_features: Validation features compatible with model architecture.
+	:type val_features: pd.DataFrame
+	:param val_labels: Validation labels compatible with model architecture.
+	:type val_labels: pd.DataFrame
+	'''
+	
 	# add early stopping 
 	early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25)
 
 	# train
-	model.fit(train_features,
-				train_labels,
-				validation_data=(val_features, val_labels),
-				epochs=10, 
-				batch_size=1, 
-				callbacks=[early_stop],
-				verbose=0)
+	history = model.fit(train_features,
+						train_labels,
+						validation_data=(val_features, val_labels),
+						epochs=5000, 
+						batch_size=1, 
+						callbacks=[early_stop],
+						verbose=0)
 
-	return None
+	return history

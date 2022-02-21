@@ -7,12 +7,11 @@ from tensorflow import keras
 
 
 from process_data import load_processed_data
-from modules.model import split_data, split_features, get_normalizer, train_model
+from modules.model import split_data, split_features, train_model, get_normalizer
+from hyperparameter_search import get_best_model, get_tuner, build_model_for_search
 
-def evaluate_model(processed_data_filepath, model_filepath, bal_authority, results_filepath):
-	'''
-	TODO
-	'''
+def evaluate_model(processed_data_filepath, search_dir, bal_authority, results_filepath):
+	
 	# get data
 	processed_data = load_processed_data(processed_data_filepath)
 
@@ -22,33 +21,21 @@ def evaluate_model(processed_data_filepath, model_filepath, bal_authority, resul
 	val_features, val_labels = split_features(val_dataset)
 	test_features, test_labels = split_features(test_dataset)
 
-	# get model
-	model = keras.models.load_model(model_filepath)
+	# get tuner
+	normalizer = get_normalizer(train_features)
+	build_model_for_search.normalizer = normalizer
+	tuner = get_tuner(search_dir, bal_authority)
 
-	# train model
-	#train_model(model, train_features, train_labels, val_features, val_labels)
+	# get model
+	model = get_best_model(tuner)
 	
 	#  calculate results
 	test_predictions = model.predict(test_features)
 	metrics = calculate_metrics(test_labels, test_predictions)
 
 	# open results
-	results = load_results(results_filepath)
+	print_metrics(metrics)
 
-	# append result
-	results = append_results(bal_authority, metrics, results)
-
-	# save results
-	results.to_csv(results_filepath,index_label='bal_authority')
-
-def append_results(bal_authority, metrics, results):
-	new_row = pd.DataFrame(metrics,index=[bal_authority])
-
-	if bal_authority in results.index:
-		results.loc[bal_authority] = new_row.loc[bal_authority]
-	else:
-		results = pd.concat([results,new_row])
-	return results
 
 def calculate_metrics(test_labels, test_predictions):
 	metrics = dict()
@@ -65,28 +52,19 @@ def calculate_metrics(test_labels, test_predictions):
 
 	return metrics
 
-def load_results(results_filepath):
-	'''
-	TODO
-	'''
-	if os.path.exists(results_filepath):
-		results = pd.read_csv(results_filepath,index_col=['bal_authority'])
-	else:
-		results = pd.DataFrame()
+def print_metrics(metrics):
+	for m in metrics:
+		print(f"{m:10s}:\t{metrics[m]:3.3f}")
 
-	return results
-
-
-	
 if __name__ == '__main__':
 		# argument parsing
 	parser = argparse.ArgumentParser('evaluate',description='Evaluate model for .')
 	parser.add_argument('processed_data_filepath',type=str)
-	parser.add_argument('model_filepath',type=str)
+	parser.add_argument('search_dir',type=str)
 	parser.add_argument('bal_authority',type=str)
 	parser.add_argument('results_filepath',type=str)
 	args = parser.parse_args()
 	
 	# evaluate
-	evaluate_model(args.processed_data_filepath,args.model_filepath,args.bal_authority,args.results_filepath)
+	evaluate_model(args.processed_data_filepath,args.search_dir,args.bal_authority,args.results_filepath)
 

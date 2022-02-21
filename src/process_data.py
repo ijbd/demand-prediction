@@ -7,7 +7,14 @@ from clean_data import load_cleaned_data
 
 def process_data(cleaned_data_filepath,processed_data_filepath):
 	'''
-	TODO
+	Converts cleaned data into processed features for machine learning model.
+
+    :param cleaned_data_filepath: Filepath to load cleaned data CSV.
+    :type cleaned_data_filepath: str
+    :param processed_data_filepath: Filepath to save processed data CSV.
+    :type processed_data_filepath: str
+    :returns: None
+    :rtype: None
 	'''
 
 	cleaned_data = load_cleaned_data(cleaned_data_filepath)
@@ -45,8 +52,8 @@ def populate_fixed_effects(processed_data):
 	- weekday
 	- trigonometric day of year
 
-	:param processed_data: TODO
-	:type processed_data: TODO
+	:param processed_data: DataFrame to populate.
+	:type processed_data: pd.DataFrame
 	:returns: None
 	:rtype: None
 	'''
@@ -66,7 +73,7 @@ def get_julian_day(date_time):
 	Return julian day of a datetime object.
 
 	:param date_time: Single date time object,
-	:type date_time: TODO
+	:type date_time: datetime.datetime
 	:returns: Julian day.
 	:rtype: Int
 	'''
@@ -74,7 +81,12 @@ def get_julian_day(date_time):
 
 def load_processed_data(processed_data_filepath):
     '''
-	TODO
+	Loads processed data from CSV. Processed data should be generated with process_data().
+
+    :param cleaned_data_filepath: Filepath of processed data CSV.
+    :type cleaned_data_filepath: str
+    :returns: Dataframe with features and labels for machine learning model.
+    :rtype: pd.DataFrame
 	'''
 
     # load 

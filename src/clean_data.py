@@ -48,7 +48,7 @@ def clean_data(raw_demand_filepath,
 
 def load_cleaned_data(cleaned_data_filepath):
     '''
-	Loads cleaned demand data from CSV. Cleaned data should be generated with clean_data().
+	Loads cleaned data from CSV. Cleaned data should be generated with clean_data().
 
     :param cleaned_data_filepath: Filepath of cleaned data CSV.
     :type cleaned_data_filepath: str

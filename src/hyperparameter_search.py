@@ -10,14 +10,20 @@ from modules.model import build_model, split_data, split_features, get_normalize
 
 def build_model_for_search(hyperparameters):
 	'''
-	Note that build_model_for_search.normalizer must be defined ahead of time
-	TODO
+	Build model using keras tuner hyperparameters object.
+	This function also defines the hyperparameter search space
+	*Note that build_model_for_search.normalizer must be defined ahead of time
+	
+	:param hyperparameters: Hyperparameters object with model architecture.
+	:type hyperparameters: keras_tuner.engine.hyperparameters.HyperParameters
+	:returns: Compiled neural network (using build_model() from model.py)
+	:rtype: 
 	'''
+
 	# define solution space for fixed-length hyperparameters
 	min_hidden_layers = 1
 	max_hidden_layers = 5
 	hidden_layers = hyperparameters.Int("hiddenLayers",min_hidden_layers,max_hidden_layers)
-	activation = hyperparameters.Choice("activation",["relu","tanh"])
 	learning_rate = hyperparameters.Float("lr", min_value=5e-4, max_value=1e-1, sampling="log")
 	
 	# define solution space for variable-length hyperparameters
@@ -28,11 +34,22 @@ def build_model_for_search(hyperparameters):
 		units.append(hyperparameters.Choice(f"units_{i}", [64,128,256,512,1028]))
 		dropout.append(hyperparameters.Choice(f"dropout_{i}", [.0, .1, .2]))
 	
-	return build_model(build_model_for_search.normalizer,hidden_layers,units,activation,dropout,learning_rate)
+	return build_model(build_model_for_search.normalizer,hidden_layers,units,dropout,learning_rate)
 
 def hyperparameter_search(processed_data_filepath,search_dir,search_name,model_filepath):
 	'''
-	TODO
+	Use keras tuner to find optimal model architecture.
+
+	:param cleaned_data_filepath: Filepath of processed data CSV.
+    :type cleaned_data_filepath: str
+	:param search_dir: Filepath to store results.
+	:type search_dir: str
+	:param search_name: Label for hyperparameter search.
+	:type search_name: str
+	:param model_filepath: Location to save best model.
+	:type model_filepath: str
+	:returns: None
+	:rtype: None
 	'''
 	# get data
 	processed_data = load_processed_data(processed_data_filepath)
@@ -52,13 +69,19 @@ def hyperparameter_search(processed_data_filepath,search_dir,search_name,model_f
 	# search
 	search(tuner,train_features,train_labels,val_features,val_labels)
 
-	# save model
-	best_model = get_best_model(tuner)
-	best_model.save(model_filepath)
+	return None
 	
 def get_tuner(search_dir,search_name):
 	'''
-	TODO
+	Create or load an instance of a keras hyperparameter tuning object.
+	For a given tuner, no overwrite will occur (even with changed parameters).
+
+	:param search_dir: Directory to store results.
+	:type search_dir: str
+	:param search_name: Name of search instance.
+	:type search_dir: str
+	:returns: Keras tuner object.
+	:rtype: keras_tuner.tuners
 	''' 
 	# define search parameters
 	tuner = kt.RandomSearch(
@@ -68,14 +91,31 @@ def get_tuner(search_dir,search_name):
 		directory=search_dir,
 		project_name=search_name
 	)
+
 	return tuner
 
+def get_best_hyperparameters(tuner):
+	return tuner.get_best_hyperparameters()[0]
+
 def get_best_model(tuner):
-	return tuner.get_best_models(num_models=1)[0]
+	return tuner.get_best_models()[0]
 
 def search(tuner,train_features,train_labels,val_features,val_labels):
 	'''
-	TODO
+	Carry out search for Keras tuner instance. 
+
+	:param tuner: Tuner from get_tuner()
+	:type tuner: keras_tuner.tuners
+	:param train_features: Train features compatible with tuner model architecture. 
+	:type train_features: pd.DataFrame
+	:param train_labels: Train labels compatible with tuner model architecture. 
+	:type train_labels: pd.DataFrame
+	:param val_features: Validation features compatible with tuner model architecture. 
+	:type val_features: pd.DataFrame
+	:param val_labels: Validation labels compatible with tuner model architecture. 
+	:type val_labels: pd.DataFrame
+	:returns: None
+	:rtype: None
 	'''
 	# add early stopping 
 	early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25)
