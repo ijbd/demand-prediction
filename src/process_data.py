@@ -1,6 +1,5 @@
 import pandas as pd 
 import numpy as np
-import tensorflow as tf
 import argparse
 
 from clean_data import load_cleaned_data
