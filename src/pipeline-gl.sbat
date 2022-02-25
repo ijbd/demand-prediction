@@ -12,6 +12,6 @@
 #SBATCH --mail-type=FAIL
 
 # Load modules
-module load cuda/10.1.243 cudnn/10.1-v7.6.4
+module load cudnn/11.2-v8.1.0
 
 bash pipeline.sh $1
