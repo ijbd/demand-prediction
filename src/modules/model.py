@@ -69,8 +69,8 @@ def split_data(processed_data):
 	years = [np.random.choice(range(year_from,year_to+1),2*num_training_years,replace=False) for i in range(12)]
 
 	for month in range(12):
-		test_dataset = test_dataset.append(processed_data[(processed_data.index.year.isin(years[month][:num_training_years])) & (processed_data.index.month == month+1)])
-		validation_dataset = validation_dataset.append(processed_data[(processed_data.index.year.isin(years[month][num_training_years:])) & (processed_data.index.month == month+1)])
+		test_dataset = pd.concat((test_dataset,processed_data[(processed_data.index.year.isin(years[month][:num_training_years])) & (processed_data.index.month == month+1)]))
+		validation_dataset = pd.concat((validation_dataset, processed_data[(processed_data.index.year.isin(years[month][num_training_years:])) & (processed_data.index.month == month+1)]))
 		
 	train_dataset = processed_data[~processed_data.index.isin(test_dataset.index.append(validation_dataset.index))]
 
