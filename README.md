@@ -1,3 +1,3 @@
 ## Project Overview 
 
-The goal of this project is to forecast long-term, hourly demand from local weather variables at the balancing authority level. First, we build a piece-wise linear regression model as a baseline from which to compare more advanced models. Next, we explore a variety of ML models including (1) vanilla ANN, (2) CatBoost, ...
+The goal of this project is to forecast long-term, hourly demand from local weather variables at the balancing authority level.
