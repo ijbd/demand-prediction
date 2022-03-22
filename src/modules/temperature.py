@@ -16,8 +16,10 @@ def load_raw_temperature(raw_temperature_filepath):
 	assert os.path.exists(raw_temperature_filepath), "Missing raw temperature data"
 
 	raw_temperature = pd.read_csv(raw_temperature_filepath,
-									skiprows=2,
-									usecols=['Year','Month','Day','Hour','Temperature'])
+									skiprows=2, 
+									index_col=0,
+									parse_dates=True,
+									usecols=["Temperature (K)"])
 
 	return raw_temperature
 			
@@ -38,42 +40,15 @@ def clean_raw_temperature(raw_temperature, year_from, year_to):
 	:returns: Cleaned temperature dataframe.
 	:rtype: pd.Dataframe
 	'''
-
-	# reindex
-	cleaned_temperature = convert_datetime_to_index(raw_temperature)
-
+	
 	# rename
 	cleaned_temperature.index.rename('Datetime',inplace=True)
-	cleaned_temperature.rename(columns={'Temperature' : 'Temperature (C)'}, inplace=True)
 
 	# resample to daily values
 	cleaned_temperature = cleaned_temperature.resample(timedelta(days=1)).max()
-
-	# remove leap days 
-	cleaned_temperature = cleaned_temperature[~((cleaned_temperature.index.month == 2) &
-											 	(cleaned_temperature.index.day == 29))]
 
 	# filter years
 	cleaned_temperature = cleaned_temperature.loc[datetime(year_from,1,1):datetime(year_to,12,31)]
 
 	return cleaned_temperature
 	
-def convert_datetime_to_index(raw_temperature):
-	'''
-	Return new dataframe converting date and time variables into datetime index
-
-	:param raw_temperature: Dataframe with date and time columns ('Year', 'Month', 'Day', 'Hour').
-	:type raw_temperature: pd.DataFrame
-	:returns: New dataframe with datetime index and date time variable columsn removed.
-	:rtype: pd.DataFrame
-	'''
-	reindexed_temperature = raw_temperature.copy()
-
-	# reindex into date time objects
-	reindexed_temperature['date_time'] = pd.to_datetime(reindexed_temperature[['Year','Month','Day','Hour']])        
-	reindexed_temperature.set_index('date_time',drop=True,inplace=True)
-	
-	# drop date time dummy columns
-	reindexed_temperature.drop(columns=['Year','Month','Day','Hour'],inplace=True)
-
-	return reindexed_temperature

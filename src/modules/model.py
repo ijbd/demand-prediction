@@ -118,6 +118,8 @@ def train_model(model, train_features, train_labels, val_features, val_labels):
 	:type val_features: pd.DataFrame
 	:param val_labels: Validation labels compatible with model architecture.
 	:type val_labels: pd.DataFrame
+	:returns: History
+	:rtype: TODO
 	'''
 	
 	# add early stopping 

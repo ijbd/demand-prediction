@@ -1,5 +1,8 @@
 archive
 src/__pycache__
 src/modules/__pycache__
+src/clustering-tests.py 
+gallery
+*tmp*
 notebooks
 data

@@ -40,7 +40,7 @@ def populate_demand_and_temperature(processed_data,cleaned_data):
 	:rtype: None
 	'''
 
-	processed_data['T'] = cleaned_data['Temperature (C)']
+	processed_data['T'] = cleaned_data['Temperature (K)']
 	processed_data['D'] = cleaned_data['Demand (MW)']
 
 	return None
