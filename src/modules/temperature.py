@@ -16,10 +16,8 @@ def load_raw_temperature(raw_temperature_filepath):
 	assert os.path.exists(raw_temperature_filepath), "Missing raw temperature data"
 
 	raw_temperature = pd.read_csv(raw_temperature_filepath,
-									skiprows=2, 
 									index_col=0,
-									parse_dates=True,
-									usecols=["Temperature (K)"])
+									parse_dates=True)
 
 	return raw_temperature
 			
@@ -40,12 +38,12 @@ def clean_raw_temperature(raw_temperature, year_from, year_to):
 	:returns: Cleaned temperature dataframe.
 	:rtype: pd.Dataframe
 	'''
-	
+
 	# rename
-	cleaned_temperature.index.rename('Datetime',inplace=True)
+	raw_temperature.index.rename('Datetime', inplace=True)
 
 	# resample to daily values
-	cleaned_temperature = cleaned_temperature.resample(timedelta(days=1)).max()
+	cleaned_temperature = raw_temperature.resample(timedelta(days=1)).max()
 
 	# filter years
 	cleaned_temperature = cleaned_temperature.loc[datetime(year_from,1,1):datetime(year_to,12,31)]

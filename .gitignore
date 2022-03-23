@@ -2,7 +2,7 @@ archive
 src/__pycache__
 src/modules/__pycache__
 src/clustering-tests.py 
+src/plot_temp_demand.py
 gallery
-*tmp*
 notebooks
 data
