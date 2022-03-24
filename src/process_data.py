@@ -4,30 +4,6 @@ import argparse
 
 from clean_data import load_cleaned_data
 
-def process_data(cleaned_data_filepath,processed_data_filepath):
-	'''
-	Converts cleaned data into processed features for machine learning model.
-
-    :param cleaned_data_filepath: Filepath to load cleaned data CSV.
-    :type cleaned_data_filepath: str
-    :param processed_data_filepath: Filepath to save processed data CSV.
-    :type processed_data_filepath: str
-    :returns: None
-    :rtype: None
-	'''
-
-	cleaned_data = load_cleaned_data(cleaned_data_filepath)
-
-	# initialize dataframe
-	processed_data = pd.DataFrame()
-
-	# populate
-	populate_demand_and_temperature(processed_data,cleaned_data)
-	populate_fixed_effects(processed_data)
-    
-    # save 
-	processed_data.to_csv(processed_data_filepath)
-
 def populate_demand_and_temperature(processed_data,cleaned_data):
 	'''
 	Copy demand and temperature data from cleaned dataset into processed dataset.
@@ -92,6 +68,30 @@ def load_processed_data(processed_data_filepath):
     processed_data = pd.read_csv(processed_data_filepath,index_col='Datetime',parse_dates=True)
 
     return processed_data
+
+def process_data(cleaned_data_filepath,processed_data_filepath):
+	'''
+	Converts cleaned data into processed features for machine learning model.
+
+    :param cleaned_data_filepath: Filepath to load cleaned data CSV.
+    :type cleaned_data_filepath: str
+    :param processed_data_filepath: Filepath to save processed data CSV.
+    :type processed_data_filepath: str
+    :returns: None
+    :rtype: None
+	'''
+
+	cleaned_data = load_cleaned_data(cleaned_data_filepath)
+
+	# initialize dataframe
+	processed_data = pd.DataFrame()
+
+	# populate
+	populate_demand_and_temperature(processed_data,cleaned_data)
+	populate_fixed_effects(processed_data)
+    
+    # save 
+	processed_data.to_csv(processed_data_filepath)
 
 if __name__ == '__main__':
 	# argument parsing

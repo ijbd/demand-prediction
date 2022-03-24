@@ -6,3 +6,4 @@ src/plot_temp_demand.py
 gallery
 notebooks
 data
+src/logical-clustering.py

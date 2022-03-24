@@ -9,7 +9,7 @@ def load_raw_temperature(raw_temperature_filepath):
 
 	:param raw_temperature_filepath: Filepath.
 	:type raw_temperature_filepath: str
-	:returns: Dataframe object with temperature, date, and time variables
+	:returns: Dataframe object with temperature variable
 	:rtype: pd.Dataframe
 	'''
 	
@@ -26,7 +26,6 @@ def clean_raw_temperature(raw_temperature, year_from, year_to):
 	Reformat raw temperature dataframe to match interface for range [year_from,year_to]:
 	- rename columns
 	- resample hourly values to daily maximum
-	- remove leap days
 	- filter by year
 
 	:param raw_temperature: Raw temperature datafrmae from load_raw_temperature().
