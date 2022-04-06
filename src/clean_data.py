@@ -1,78 +1,85 @@
 import pandas as pd
-from datetime import timedelta, datetime
-import os, sys
+from datetime import timedelta
 
 import argparse
 
-from modules.demand import load_raw_demand, clean_raw_demand
-from modules.temperature import load_raw_temperature, clean_raw_temperature
+DEMAND_COL_MAPPER = { "cleaned demand (MW)" : "Demand (MW)"}
+TEMP_COL_MAPPER = {"Temperature (K)": "Temperature (K)"}
 
-def clean_data(raw_demand_filepath, 
-                raw_temperature_filepath,
-                cleaned_data_filepath, 
-                year_from, 
-                year_to):
-    '''
-	Clean, combine, then save raw demand and temperature data for time range [year_from, year_to].
-
-    :param raw_demand_filepath: Filepath to raw demand CSV.
-    :type raw_demand_filepath: str
-    :param raw_temperature_filepath: Filepath to raw temperature CSV.
-    :type raw_temperature_filepath: str
-    :param cleaned_data_filepath: Filepath to save cleaned data CSV.
-    :type cleaned_data_filepath: str
-    :param year_from: First year of data to include.
-    :type year_from: int
-    :param year_to: Last year of data to include.
-    :type year_to: int
-    :returns: None
-    :rtype: None
-	'''
-
+def clean_data(raw_demand_filepath: str, 
+                raw_temp_filepath: str,
+                cleaned_data_filepath: str, 
+                years: list) -> None:
+    """
+    Clean and combine the raw temperature and demand data.
+    """
+    
     # open raw data
     raw_demand = load_raw_demand(raw_demand_filepath)
-    cleaned_demand = clean_raw_demand(raw_demand, year_from, year_to)
+    raw_temp = load_raw_temp(raw_temp_filepath)
 
-    # open temperature data
-    raw_temperature = load_raw_temperature(raw_temperature_filepath)
-    cleaned_temperature = clean_raw_temperature(raw_temperature, year_from, year_to)
+    # clean and format dataframes
+    cleaned_demand = format_dataframe(raw_demand, DEMAND_COL_MAPPER, years)
+    cleaned_temp = format_dataframe(raw_temp, TEMP_COL_MAPPER, years)
 
     # combine data
-    cleaned_data = pd.concat((cleaned_temperature,cleaned_demand),axis=1)
+    cleaned_data = pd.concat((cleaned_temp,cleaned_demand),axis=1)
     
     # save data cleaned_data
     cleaned_data.to_csv(cleaned_data_filepath)
 
     return None
 
+def load_raw_demand(raw_demand_filepath: str) -> pd.DataFrame:
 
-def load_cleaned_data(cleaned_data_filepath):
-    '''
-	Loads cleaned data from CSV. Cleaned data should be generated with clean_data().
+	raw_demand = pd.read_csv(raw_demand_filepath,
+							parse_dates=True,
+							index_col='date_time',
+							usecols=['date_time','cleaned demand (MW)'])
 
-    :param cleaned_data_filepath: Filepath of cleaned data CSV.
-    :type cleaned_data_filepath: str
-    :returns: Dataframe with daily peak demand and temperature (indexed by datetime).
-    :rtype: pd.DataFrame
-	'''
+	return raw_demand
 
-    cleaned_data = pd.read_csv(cleaned_data_filepath,index_col='Datetime',parse_dates=True)
+def load_raw_temp(raw_temp_filepath: str) -> pd.DataFrame:
+
+	raw_temp = pd.read_csv(raw_temp_filepath,
+                            index_col=0,
+                            parse_dates=True)
+
+	return raw_temp
+
+
+def format_dataframe(raw_data:pd.DataFrame, col_mapper: dict, years:list) -> pd.DataFrame:
+
+    # make new dataframe
+    cleaned_data = raw_data.copy()
+
+    # rename columns
+    cleaned_data.index.rename("Datetime", inplace=True)
+    cleaned_data.rename(columns=col_mapper, inplace=True)
+
+    # resample to daily
+    cleaned_data = cleaned_data.resample(timedelta(days=1)).max()
+    
+    # remove leap day
+    cleaned_data = cleaned_data[~((cleaned_data.index.month == 2) & (cleaned_data.index.day == 29))]
+
+    # filter by years
+    cleaned_data = cleaned_data.loc[cleaned_data.index.year.isin(years)]
 
     return cleaned_data
-    
+
 if __name__ == '__main__':
     # argument parsing
-    parser = argparse.ArgumentParser('clean_data',description='Formats and combines raw demand and temperature data.')
+    parser = argparse.ArgumentParser('clean_data',description='Formats and combines raw demand and temp data.')
     parser.add_argument('raw_demand_filepath',type=str)
-    parser.add_argument('raw_temperature_filepath',type=str)
+    parser.add_argument('raw_temp_filepath',type=str)
     parser.add_argument('cleaned_data_filepath',type=str)
-    parser.add_argument('year_from',type=int,choices=range(2016,2020),default=2016)
-    parser.add_argument('year_to',type=int,choices=range(2016,2020),default=2019)
+    parser.add_argument('years', nargs='+', type=int, help="data years")
+    
     args = parser.parse_args()
 
     # data cleaning
     clean_data(args.raw_demand_filepath, 
-                args.raw_temperature_filepath,
+                args.raw_temp_filepath,
                 args.cleaned_data_filepath,
-                args.year_from, 
-                args.year_to)
+                args.years)

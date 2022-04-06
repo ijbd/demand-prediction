@@ -1,147 +1,179 @@
-from multiprocessing import ProcessError
+import os
 import pandas as pd
 import tensorflow as tf
 import keras_tuner as kt
-import argparse
-import pickle
+from tensorboard.backend.event_processing import event_accumulator
 
-from process_data import load_processed_data
-from modules.model import build_model, split_data, split_features, get_normalizer
+from model import build_model, get_normalization_layer
 
-def build_model_for_search(hyperparameters):
-	'''
-	Build model using keras tuner hyperparameters object.
-	This function also defines the hyperparameter search space
-	*Note that build_model_for_search.normalizer must be defined ahead of time
-	
-	:param hyperparameters: Hyperparameters object with model architecture.
-	:type hyperparameters: keras_tuner.engine.hyperparameters.HyperParameters
-	:returns: Compiled neural network (using build_model() from model.py)
-	:rtype: 
-	'''
+class HPModelBuilder:
 
-	# define solution space for fixed-length hyperparameters
-	min_hidden_layers = 1
-	max_hidden_layers = 10
-	hidden_layers = hyperparameters.Int("hiddenLayers",min_hidden_layers,max_hidden_layers)
-	learning_rate = hyperparameters.Float("lr", min_value=5e-4, max_value=1e-1, sampling="log")
+	def __init__(self, normalizer):
+		self.normalizer = normalizer
 	
-	# define solution space for variable-length hyperparameters
-	units = []
-	dropout = []
+	def build_model_from_hyperparameters (self, hyperparameters: kt.engine.hyperparameters.HyperParameters) -> tf.keras.Sequential:
 
-	for i in range(5):
-		units.append(hyperparameters.Choice(f"units_{i}", [64,128,256,512,1028]))
-		dropout.append(hyperparameters.Choice(f"dropout_{i}", [.0, .1, .2]))
+		# define solution space for fixed-length hyperparameters
+		hidden_layers = hyperparameters.get("hidden_layers")
+		learning_rate = hyperparameters.get("learning_rate")
+
+		# define solution space for variable-length hyperparameters
+		units = []
+
+		for i in range(hidden_layers):
+			units.append(hyperparameters.get(f"units_{i}"))
+		
+		return build_model(self.normalizer, hidden_layers, units, learning_rate)
+
+def load_data(data_file: str) -> pd.DataFrame:
+	return pd.read_csv(data_file, index_col="Datetime", parse_dates=True)
+
+def generate_search_space(min_hidden_layers: int,
+						max_hidden_layers: int,
+						min_learning_rate: int,
+						max_learning_rate: int,
+						hidden_layer_size_options: int) -> kt.HyperParameters:
 	
-	return build_model(build_model_for_search.normalizer,hidden_layers,units,dropout,learning_rate)
-	
-def get_tuner(search_dir,search_name):
+		hyperparameters = kt.HyperParameters()
+		
+		# define search space for fixed-length hyperparameters
+		hidden_layers = hyperparameters.Int("hidden_layers", min_hidden_layers, max_hidden_layers)
+		learning_rate = hyperparameters.Float("learning_rate", min_value=min_learning_rate, max_value=max_learning_rate, sampling="log")
+		
+		for i in range(max_hidden_layers):
+			hyperparameters.Choice(f"units_{i}", hidden_layer_size_options)
+		
+		return hyperparameters
+
+def get_tuner(model_builder: HPModelBuilder, 
+			hp_search_space: kt.HyperParameters,
+			search_dir: str, 
+			search_name: str, 
+			search_trials:int) -> kt.BayesianOptimization:
 	'''
 	Create or load an instance of a keras hyperparameter tuning object.
 	For a given tuner, no overwrite will occur (even with changed parameters).
-
-	:param search_dir: Directory to store results.
-	:type search_dir: str
-	:param search_name: Name of search instance.
-	:type search_dir: str
-	:returns: Keras tuner object.
-	:rtype: keras_tuner.tuners
 	''' 
+
 	# define search parameters
-	tuner = kt.RandomSearch(
-		build_model_for_search,
+	tuner = kt.BayesianOptimization(
+		model_builder.build_model_from_hyperparameters,
 		objective='val_loss',
-		max_trials=200,
+		max_trials=search_trials,
 		directory=search_dir,
-		project_name=search_name
+		project_name=search_name,
+		hyperparameters=hp_search_space
 	)
 
 	return tuner
 
-def get_best_hyperparameters(tuner):
-	return tuner.get_best_hyperparameters()[0]
+def search(tuner: kt.BayesianOptimization, 
+			train_features: pd.DataFrame, 
+			train_labels: pd.DataFrame, 
+			val_features: pd.DataFrame, 
+			val_labels: pd.DataFrame,
+			early_stopping_patience: int,
+			max_epochs: int):
 
-def get_best_model(tuner):
-	return tuner.get_best_models()[0]
-
-def search(tuner,train_features,train_labels,val_features,val_labels):
-	'''
-	Carry out search for Keras tuner instance. 
-
-	:param tuner: Tuner from get_tuner()
-	:type tuner: keras_tuner.tuners
-	:param train_features: Train features compatible with tuner model architecture. 
-	:type train_features: pd.DataFrame
-	:param train_labels: Train labels compatible with tuner model architecture. 
-	:type train_labels: pd.DataFrame
-	:param val_features: Validation features compatible with tuner model architecture. 
-	:type val_features: pd.DataFrame
-	:param val_labels: Validation labels compatible with tuner model architecture. 
-	:type val_labels: pd.DataFrame
-	:returns: None
-	:rtype: None
-	'''
-	# add early stopping 
-	early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=25)
+	# callback
+	early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=early_stopping_patience)
+	tensorboard_callback = tf.keras.callbacks.TensorBoard(os.path.join(tuner.directory, tuner.project_name))
 
 	# search
 	tuner.search(train_features, 
 			train_labels,
-			epochs=4000,
+			epochs=max_epochs,
 			validation_data=(val_features, val_labels),
-			verbose=False,
-			callbacks=[early_stop])
+			verbose=True,
+			callbacks=[early_stopping_callback, tensorboard_callback])
 
 	return None
 
-def hyperparameter_search(processed_data_filepath,search_dir,search_name,model_filepath):
-	'''
-	Use keras tuner to find optimal model architecture.
+def get_best_hyperparameters(tuner: kt.BayesianOptimization) -> kt.HyperParameters:
+	return tuner.get_best_hyperparameters()[0]
 
-	:param cleaned_data_filepath: Filepath of processed data CSV.
-    :type cleaned_data_filepath: str
-	:param search_dir: Filepath to store results.
-	:type search_dir: str
-	:param search_name: Label for hyperparameter search.
-	:type search_name: str
-	:param model_filepath: Location to save best model.
-	:type model_filepath: str
-	:returns: None
-	:rtype: None
-	'''
-	# get data
-	processed_data = load_processed_data(processed_data_filepath)
+def get_best_model(tuner: kt.BayesianOptimization) -> tf.keras.Sequential:
+	return tuner.get_best_models()[0]
 
-	train_dataset, val_dataset, test_dataset = split_data(processed_data)
+def get_best_trial_id(tuner: kt.BayesianOptimization) -> int:
+	return tuner.oracle.get_best_trials()[0].trial_id
 
-	train_features, train_labels = split_features(train_dataset)
-	val_features, val_labels = split_features(val_dataset)
-	test_features, test_labels = split_features(test_dataset)
+def get_best_history(tuner: kt.BayesianOptimization) -> pd.DataFrame:
+	best_trial = get_best_trial_id(tuner)
 
-	# assign normalizer
-	build_model_for_search.normalizer = get_normalizer(train_features)
+	# accuracy and loss
+	history = pd.DataFrame()
 
-	# build keras tuner
-	tuner = get_tuner(search_dir, search_name)
+	for dataset in ["train", "validation"]:
+		
+		event_accumulator_path = os.path.join(tuner.directory, tuner.project_name, best_trial, "execution0", dataset)
+		ea = event_accumulator.EventAccumulator(event_accumulator_path)
+		ea.Reload()
+
+		loss = pd.DataFrame([(s, tf.make_ndarray(t)) for w, s, t in ea.Tensors("epoch_loss")],
+            columns=["step", "loss"])
+		
+		loss.set_index("step")
+
+		history[f"{dataset} loss"] = loss["loss"]
+
+	return history
+
+def extract_hyperparameters_to_series(hyperparameters: kt.HyperParameters) -> pd.Series:
+
+	hp_series = pd.Series()
+	hp_series["hidden_layers"] = int(hyperparameters.get("hidden_layers"))
+	hp_series["learning_rate"] = f"{hyperparameters.get('learning_rate'):.2E}"
+
+	for i in range(int(hp_series["hidden_layers"])):
+		hp_series[f"units_layer_{i}"] = int(hyperparameters.get(f"units_{i}"))
+
+	return hp_series
+
+def hyperparameter_search(config: dict) -> None:
+
+	# load data
+	train_features = load_data(config["train_features_file"])
+	train_labels = load_data(config["train_labels_file"])
+	val_features = load_data(config["val_features_file"])
+	val_labels = load_data(config["val_labels_file"])
+
+	# get hyperparameters
+	hp_search_space = generate_search_space(config["hp_min_hidden_layers"],
+											config["hp_max_hidden_layers"],
+											config["hp_min_learning_rate"],
+											config["hp_max_learning_rate"],
+											config["hp_hidden_layer_size_choices"])
+
+	# get normalizer 
+	normalizer = get_normalization_layer(train_features)
+	model_builder = HPModelBuilder(normalizer)
+
+	# get tuner
+	tuner = get_tuner(model_builder,
+						hp_search_space,
+						config["hyperparameter_search_dir"],
+						config["hyperparameter_search_name"],
+						config["hp_search_trials"])
 
 	# search
-	search(tuner,train_features,train_labels,val_features,val_labels)
+	search(tuner, 
+			train_features, 
+			train_labels,
+			val_features,
+			val_labels,
+			config["ann_early_stopping_patience"],
+			config["ann_max_epochs"])
+
+	# get metadata from best model
+	best_model = get_best_model(tuner)
+	best_hyperparameters = get_best_hyperparameters(tuner)
+	best_hyperparameters_series = extract_hyperparameters_to_series(best_hyperparameters)
+	best_model_history = get_best_history(tuner)
+
+	# save model, history, and hyperparameters
+	best_model.save(config["ann_model_file"])
+	best_model_history.to_csv(config["ann_history_file"])	
+	best_hyperparameters_series.to_csv(config["ann_hyperparameters_file"], header=False)
 
 	return None
-
-if __name__ == '__main__':
-	# argument parsing
-	parser = argparse.ArgumentParser('hyperparameter search',description='Find best ANN architecture for dataset.')
-	parser.add_argument('processed_data_filepath',type=str)
-	parser.add_argument('search_dir',type=str)
-	parser.add_argument('search_name',type=str)
-	parser.add_argument('model_filepath',type=str)
-	args = parser.parse_args()
-	
-	# search
-	hyperparameter_search(args.processed_data_filepath,
-						args.search_dir,
-						args.search_name,
-						args.model_filepath)
-

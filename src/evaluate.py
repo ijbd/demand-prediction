@@ -1,69 +1,67 @@
 import numpy as np
 import pandas as pd
-import argparse
-import os
+import tensorflow as tf
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percentage_error
-from tensorflow import keras
 
+import matplotlib.pyplot as plt
 
-from process_data import load_processed_data
-from modules.model import split_data, split_features, train_model, get_normalizer
-from hyperparameter_search import get_best_model, get_tuner, build_model_for_search
+def evaluate(config: dict) -> None:
 
-def calculate_metrics(test_labels, test_predictions):
+	# setup 
+	summary = pd.Series()
+
+	# load model
+	model = tf.keras.models.load_model(config["ann_model_file"])
+
+	# iterate train/val/test 
+	for dataset in ["train", "val", "test"]:
+
+		# load features/labels
+		features = pd.read_csv(config[f"{dataset}_features_file"], index_col='Datetime', parse_dates=True).values
+		labels = pd.read_csv(config[f"{dataset}_labels_file"], index_col='Datetime', parse_dates=True).values
+		
+		# make predictions
+		predictions = model.predict(features)
+
+		# get metrics
+		summary[f"{dataset}-rmse"] = mean_squared_error(labels, predictions,squared=False)
+		summary[f"{dataset}-mape"] = mean_absolute_percentage_error(labels, predictions)
+		summary[f"{dataset}-r2"] = r2_score(labels, predictions)
+
+		# get peak hours 
+		peak_hours = labels > np.percentile(labels,75)
+		summary[f"{dataset}-rmse-25"] = mean_squared_error(labels[peak_hours], predictions[peak_hours],squared=False)
+		summary[f"{dataset}-mape-25"] = mean_absolute_percentage_error(labels[peak_hours], predictions[peak_hours])
+		summary[f"{dataset}-r2-25"] = r2_score(labels[peak_hours], predictions[peak_hours])
+		
+		if dataset == "train":
+			fig, ax = plt.subplots()
+
+			ax.scatter(labels, predictions)
+			ax.scatter(labels[peak_hours], predictions[peak_hours])
+			ax.set_xlabel("observed")
+			ax.set_ylabel("predicted")
+			
+			plt.savefig("tmp.png")
+
+	# write to csv
+	summary.to_csv(config["ann_summary_file"], header=False)
+
+	return None
+
+def calculate_metrics(labels, predictions):
 	metrics = dict()
 
-	metrics['rmse'] = mean_squared_error(test_labels, test_predictions,squared=False)
-	metrics['mape'] = mean_absolute_percentage_error(test_labels, test_predictions)
-	metrics['r2'] = r2_score(test_labels, test_predictions)
+	metrics['rmse'] = mean_squared_error(labels, predictions,squared=False)
+	metrics['mape'] = mean_absolute_percentage_error(labels, predictions)
+	metrics['r2'] = r2_score(labels, predictions)
 
 	# peak metrics 
-	peak_hours = test_labels > np.percentile(test_labels,75)
-	metrics['rmse-25'] = mean_squared_error(test_labels[peak_hours], test_predictions[peak_hours],squared=False)
-	metrics['mape-25'] = mean_absolute_percentage_error(test_labels[peak_hours], test_predictions[peak_hours])
-	metrics['r2-25'] = r2_score(test_labels[peak_hours], test_predictions[peak_hours])
+	peak_hours = labels > np.percentile(labels,75)
+	metrics['rmse-25'] = mean_squared_error(labels[peak_hours], predictions[peak_hours],squared=False)
+	metrics['mape-25'] = mean_absolute_percentage_error(labels[peak_hours], predictions[peak_hours])
+	metrics['r2-25'] = r2_score(labels[peak_hours], predictions[peak_hours])
 
 	return metrics
 
-def print_metrics(metrics):
-	for m in metrics:
-		print(f"{m:10s}:\t{metrics[m]:3.3f}")
-
-def evaluate_model(processed_data_filepath, search_dir, search_name, results_filepath):
-	
-	# get data
-	processed_data = load_processed_data(processed_data_filepath)
-
-	train_dataset, val_dataset, test_dataset = split_data(processed_data)
-
-	train_features, train_labels = split_features(train_dataset)
-	val_features, val_labels = split_features(val_dataset)
-	test_features, test_labels = split_features(test_dataset)
-
-	# get tuner
-	normalizer = get_normalizer(train_features)
-	build_model_for_search.normalizer = normalizer
-	tuner = get_tuner(search_dir, search_name)
-
-	# get model
-	model = get_best_model(tuner)
-	
-	#  calculate results
-	test_predictions = model.predict(test_features)
-	metrics = calculate_metrics(test_labels, test_predictions)
-
-	# open results
-	print_metrics(metrics)
-
-if __name__ == '__main__':
-		# argument parsing
-	parser = argparse.ArgumentParser('evaluate',description='Evaluate model for .')
-	parser.add_argument('processed_data_filepath',type=str)
-	parser.add_argument('search_dir',type=str)
-	parser.add_argument('search_name',type=str)
-	parser.add_argument('results_filepath',type=str)
-	args = parser.parse_args()
-	
-	# evaluate
-	evaluate_model(args.processed_data_filepath,args.search_dir,args.search_name,args.results_filepath)
 

@@ -1,9 +1,9 @@
 archive
 src/__pycache__
 src/modules/__pycache__
-src/clustering-tests.py 
+src/clustering_tests.py 
 src/plot_temp_demand.py
 gallery
 notebooks
 data
-src/logical-clustering.py
+src/logical_clustering.py
