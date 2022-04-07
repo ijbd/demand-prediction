@@ -3,8 +3,6 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percentage_error
 
-import matplotlib.pyplot as plt
-
 def evaluate(config: dict) -> None:
 
 	# setup 
@@ -33,16 +31,6 @@ def evaluate(config: dict) -> None:
 		summary[f"{dataset}-rmse-25"] = mean_squared_error(labels[peak_hours], predictions[peak_hours],squared=False)
 		summary[f"{dataset}-mape-25"] = mean_absolute_percentage_error(labels[peak_hours], predictions[peak_hours])
 		summary[f"{dataset}-r2-25"] = r2_score(labels[peak_hours], predictions[peak_hours])
-		
-		if dataset == "train":
-			fig, ax = plt.subplots()
-
-			ax.scatter(labels, predictions)
-			ax.scatter(labels[peak_hours], predictions[peak_hours])
-			ax.set_xlabel("observed")
-			ax.set_ylabel("predicted")
-			
-			plt.savefig("tmp.png")
 
 	# write to csv
 	summary.to_csv(config["ann_summary_file"], header=False)

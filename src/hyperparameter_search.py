@@ -84,7 +84,7 @@ def search(tuner: kt.BayesianOptimization,
 			train_labels,
 			epochs=max_epochs,
 			validation_data=(val_features, val_labels),
-			verbose=True,
+			verbose=False,
 			callbacks=[early_stopping_callback, tensorboard_callback])
 
 	return None
