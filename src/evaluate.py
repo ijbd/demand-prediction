@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percenta
 def evaluate(config: dict) -> None:
 
 	# setup 
-	summary = pd.Series()
+	summary = pd.Series(dtype=object)
 
 	# load model
 	model = tf.keras.models.load_model(config["ann_model_file"])

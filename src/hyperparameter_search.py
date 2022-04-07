@@ -121,7 +121,7 @@ def get_best_history(tuner: kt.BayesianOptimization) -> pd.DataFrame:
 
 def extract_hyperparameters_to_series(hyperparameters: kt.HyperParameters) -> pd.Series:
 
-	hp_series = pd.Series()
+	hp_series = pd.Series(dtype=object)
 	hp_series["hidden_layers"] = int(hyperparameters.get("hidden_layers"))
 	hp_series["learning_rate"] = f"{hyperparameters.get('learning_rate'):.2E}"
 
