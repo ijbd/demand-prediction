@@ -12,8 +12,6 @@ fi
 BAL_AUTH=$1
 DEFAULT_CONFIG_FILE=default_config.json
 
-echo "running ANN pipeline for $1..."
-
 # file structure
 PROJECT_DIR=$(dirname $(dirname $(realpath $0)))
 RAW_DATA_DIR=$PROJECT_DIR/data/00_raw

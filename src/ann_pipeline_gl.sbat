@@ -14,4 +14,6 @@
 # Load modules
 module load cudnn/11.2-v8.1.0
 
+echo "Launching GL job. ANN pipeline for $1..."
+
 bash ann_pipeline.sh $@
