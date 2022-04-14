@@ -2,9 +2,8 @@ import os
 import pandas as pd
 import tensorflow as tf
 import keras_tuner as kt
-from tensorboard.backend.event_processing import event_accumulator
 
-from model import build_model, get_normalization_layer
+from model import build_model, get_normalization_layer, train_model
 
 class HPModelBuilder:
 
@@ -72,8 +71,8 @@ def search(tuner: kt.BayesianOptimization,
 			train_labels: pd.DataFrame, 
 			val_features: pd.DataFrame, 
 			val_labels: pd.DataFrame,
-			early_stopping_patience: int,
-			max_epochs: int):
+			max_epochs: int,
+			early_stopping_patience: int):
 
 	# callback
 	early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=early_stopping_patience)
@@ -98,6 +97,12 @@ def get_best_model(tuner: kt.BayesianOptimization) -> tf.keras.Sequential:
 def get_best_trial_id(tuner: kt.BayesianOptimization) -> int:
 	return tuner.oracle.get_best_trials()[0].trial_id
 
+'''
+NOTE: To save history during HPsearch using tensor board the following changes should be made in the 'search' function, 
+	I had trouble getting the full training history, and documentation for the tensorboard backend isn't great:
+
+from tensorboard.backend.event_processing import event_accumulator
+
 def get_best_history(tuner: kt.BayesianOptimization) -> pd.DataFrame:
 	best_trial = get_best_trial_id(tuner)
 
@@ -118,6 +123,17 @@ def get_best_history(tuner: kt.BayesianOptimization) -> pd.DataFrame:
 		history[f"{dataset} loss"] = loss["loss"]
 
 	return history
+
+ADD ->	tensorboard_callback = tf.keras.callbacks.TensorBoard(os.path.join(tuner.directory, tuner.project_name))
+
+		# search
+		tuner.search(train_features, 
+				train_labels,
+				epochs=max_epochs,
+				validation_data=(val_features, val_labels),
+				verbose=False,
+MODIFY ->		callbacks=[early_stopping_callback, tensorboard_callback])
+'''
 
 def extract_hyperparameters_to_series(hyperparameters: kt.HyperParameters) -> pd.Series:
 
@@ -162,18 +178,25 @@ def hyperparameter_search(config: dict) -> None:
 			train_labels,
 			val_features,
 			val_labels,
-			config["ann_early_stopping_patience"],
-			config["ann_max_epochs"])
+			config["ann_max_epochs"],
+			config["ann_early_stopping_patience"])
 
 	# get metadata from best model
-	best_model = get_best_model(tuner)
 	best_hyperparameters = get_best_hyperparameters(tuner)
 	best_hyperparameters_series = extract_hyperparameters_to_series(best_hyperparameters)
-	best_model_history = get_best_history(tuner)
-
-	# save model, history, and hyperparameters
-	best_model.save(config["ann_model_file"])
-	best_model_history.to_csv(config["ann_history_file"])	
 	best_hyperparameters_series.to_csv(config["ann_hyperparameters_file"], header=False)
+	
+	# save model, history, and hyperparameters
+	model = model_builder.build_model_from_hyperparameters(best_hyperparameters)
+	history = train_model(model, 
+						train_features, 
+						train_labels, 
+						val_features, 
+						val_labels,
+						config["ann_max_epochs"],
+						config["ann_early_stopping_patience"])
+
+	model.save(config["ann_model_file"])
+	history.to_csv(config["ann_history_file"])	
 
 	return None

@@ -47,6 +47,6 @@ def train_model(model: tf.keras.Sequential,
 						epochs=max_epochs, 
 						batch_size=1, 
 						callbacks=[early_stop],
-						verbose=0)
+						verbose=1)
 
 	return history
