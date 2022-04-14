@@ -97,44 +97,6 @@ def get_best_model(tuner: kt.BayesianOptimization) -> tf.keras.Sequential:
 def get_best_trial_id(tuner: kt.BayesianOptimization) -> int:
 	return tuner.oracle.get_best_trials()[0].trial_id
 
-'''
-NOTE: To save history during HPsearch using tensor board the following changes should be made in the 'search' function, 
-	I had trouble getting the full training history, and documentation for the tensorboard backend isn't great:
-
-from tensorboard.backend.event_processing import event_accumulator
-
-def get_best_history(tuner: kt.BayesianOptimization) -> pd.DataFrame:
-	best_trial = get_best_trial_id(tuner)
-
-	# accuracy and loss
-	history = pd.DataFrame()
-
-	for dataset in ["train", "validation"]:
-		
-		event_accumulator_path = os.path.join(tuner.directory, tuner.project_name, best_trial, "execution0", dataset)
-		ea = event_accumulator.EventAccumulator(event_accumulator_path)
-		ea.Reload()
-
-		loss = pd.DataFrame([(s, tf.make_ndarray(t)) for w, s, t in ea.Tensors("epoch_loss")],
-            columns=["step", "loss"])
-		
-		loss.set_index("step")
-
-		history[f"{dataset} loss"] = loss["loss"]
-
-	return history
-
-ADD ->	tensorboard_callback = tf.keras.callbacks.TensorBoard(os.path.join(tuner.directory, tuner.project_name))
-
-		# search
-		tuner.search(train_features, 
-				train_labels,
-				epochs=max_epochs,
-				validation_data=(val_features, val_labels),
-				verbose=False,
-MODIFY ->		callbacks=[early_stopping_callback, tensorboard_callback])
-'''
-
 def extract_hyperparameters_to_series(hyperparameters: kt.HyperParameters) -> pd.Series:
 
 	hp_series = pd.Series(dtype=object)
@@ -145,6 +107,9 @@ def extract_hyperparameters_to_series(hyperparameters: kt.HyperParameters) -> pd
 		hp_series[f"units_layer_{i}"] = int(hyperparameters.get(f"units_{i}"))
 
 	return hp_series
+
+def extract_history_to_dataframe(history: tf.keras.callbacks.History) -> pd.DataFrame:
+	return pd.DataFrame.from_dict(history.history)
 
 def hyperparameter_search(config: dict) -> None:
 
@@ -197,6 +162,7 @@ def hyperparameter_search(config: dict) -> None:
 						config["ann_early_stopping_patience"])
 
 	model.save(config["ann_model_file"])
-	history.to_csv(config["ann_history_file"])	
+	history_df = extract_history_to_dataframe(history)
+	history_df.to_csv(config["ann_history_file"])	
 
 	return None
