@@ -13,7 +13,7 @@ BAL_AUTH=$1
 
 # file structure
 REPO_DIR=$(dirname $(dirname $(realpath $0)))
-PROJECT_DIR=$REPO_DIR
+PROJECT_DIR=/nfs/turbo/seas-mtcraig/ijbd/data/03_models/$BAL_AUTH
 RAW_DATA_DIR=$PROJECT_DIR/data/00_raw
 CLEANED_DATA_DIR=$PROJECT_DIR/data/01_cleaned
 PROCESSED_DATA_DIR=$PROJECT_DIR/data/02_processed
