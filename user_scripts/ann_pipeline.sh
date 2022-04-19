@@ -10,10 +10,10 @@ fi
 
 # parameters
 BAL_AUTH=$1
-DEFAULT_CONFIG_FILE=default_config.json
 
 # file structure
-PROJECT_DIR=$(dirname $(dirname $(realpath $0)))
+REPO_DIR=$(dirname $(dirname $(realpath $0)))
+PROJECT_DIR=$REPO_DIR
 RAW_DATA_DIR=$PROJECT_DIR/data/00_raw
 CLEANED_DATA_DIR=$PROJECT_DIR/data/01_cleaned
 PROCESSED_DATA_DIR=$PROJECT_DIR/data/02_processed
@@ -27,7 +27,8 @@ mkdir -p $PROCESSED_DATA_DIR
 mkdir -p $MODEL_DIR
 
 # generate config file
+DEFAULT_CONFIG_FILE=$REPO_DIR/config/default_config.json
 sed "s#{PROJECT_DIR}#$PROJECT_DIR#g" $DEFAULT_CONFIG_FILE | sed -e "s#{BAL_AUTH}#$BAL_AUTH#g" > $CONFIG_FILE
 
 # python script
-python ann_pipeline.py $CONFIG_FILE
+python $REPO_DIR/src/ann_pipeline.py $CONFIG_FILE
