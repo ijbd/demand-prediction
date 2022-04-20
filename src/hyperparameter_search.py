@@ -157,7 +157,7 @@ def hyperparameter_search(config: dict) -> None:
 	best_hyperparameters_series.to_csv(config["ann_summary_file"], header=False)
 	
 	# save model, history, and hyperparameters
-	if not os.path.exists(config["ann_model_file"])
+	if not os.path.exists(config["ann_model_file"]):
 		model = model_builder.build_model_from_hyperparameters(best_hyperparameters)
 		history = train_model(model, 
 			train_features, 

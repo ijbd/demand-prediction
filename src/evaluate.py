@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score as r2, mean_squared_error as mse, mean_abso
 def evaluate(config: dict) -> None:
 
 	# setup 
-	summary = pd.read_csv(config["ann_summary_file"], squeeze=True)
+	summary = pd.read_csv(config["ann_summary_file"]).squeeze()
 
 	# load model
 	model = tf.keras.models.load_model(config["ann_model_file"])
