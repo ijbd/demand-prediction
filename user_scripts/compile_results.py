@@ -11,9 +11,9 @@ def compile_results(project_dir, compilation_dir):
 
         # copy history file and model
         for output in ["history", "summary", "test_predictions"]:
-	    source_path = os.path.join(model_dir, f"ann_{output}.csv")
-	    dest_path = os.path.join(compilation_dir, f"{model_name}_ann_{output}.csv")
-	    shutil.copy(source_path, dest_path)
+            source_path = os.path.join(model_dir, f"ann_{output}.csv")
+            dest_path = os.path.join(compilation_dir, f"{model_name}_ann_{output}.csv")
+            shutil.copy(source_path, dest_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

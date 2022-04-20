@@ -6,8 +6,8 @@ from sklearn.metrics import r2_score as r2, mean_squared_error as mse, mean_abso
 def evaluate(config: dict) -> None:
 
 	# setup 
-	summary = pd.read_csv(config["ann_summary_file"]).squeeze()
-
+	summary = pd.read_csv(config["ann_summary_file"],index_col=0).squeeze()	
+		
 	# load model
 	model = tf.keras.models.load_model(config["ann_model_file"])
 
@@ -39,7 +39,9 @@ def evaluate(config: dict) -> None:
 	summary.to_csv(config["ann_summary_file"], header=False)
 	
 	# write predictions to csv
-	predictions = pd.Series(index=labels.index, data=predictions)
-	predictions.to_csv(config["ann_test_predictions_file"])
+	test_predictions = pd.DataFrame(index=labels.index)
+	test_predictions["labels"] = labels.values.flatten()
+	test_predictions["predictions"] = predictions.flatten()
+	test_predictions.to_csv(config["ann_test_predictions_file"])
 	return None
 
