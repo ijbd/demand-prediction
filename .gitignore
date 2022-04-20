@@ -5,4 +5,3 @@ src/clustering_tests.py
 src/plot_temp_demand.py
 data
 src/logical_clustering.py
-user_scripts/make_plots.py
