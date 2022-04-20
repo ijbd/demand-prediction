@@ -48,7 +48,7 @@ def get_tuner(model_builder: HPModelBuilder,
 			hp_search_space: kt.HyperParameters,
 			search_dir: str, 
 			search_name: str, 
-			search_trials:int) -> kt.BayesianOptimization
+			search_trials:int) -> kt.BayesianOptimization:
 	'''
 	Create or load an instance of a keras hyperparameter tuning object.
 	For a given tuner, no overwrite will occur (even with changed parameters).
