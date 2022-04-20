@@ -10,10 +10,7 @@ def clean_data(raw_demand_filepath: str,
                 raw_temp_filepath: str,
                 cleaned_data_filepath: str, 
                 years: list) -> None:
-    """
-    Clean and combine the raw temperature and demand data.
-    """
-    
+    # TODO: ADD DOCSTRING    
     # open raw data
     raw_demand = load_raw_demand(raw_demand_filepath)
     raw_temp = load_raw_temp(raw_temp_filepath)
@@ -31,25 +28,23 @@ def clean_data(raw_demand_filepath: str,
     return None
 
 def load_raw_demand(raw_demand_filepath: str) -> pd.DataFrame:
-
-	raw_demand = pd.read_csv(raw_demand_filepath,
-							parse_dates=True,
-							index_col='date_time',
-							usecols=['date_time','cleaned demand (MW)'])
-
-	return raw_demand
+    #TODO: ADD DOCSTRING
+    raw_demand = pd.read_csv(raw_demand_filepath,
+        parse_dates=True,
+        index_col='date_time',
+        usecols=['date_time','cleaned demand (MW)'])
+    return raw_demand
 
 def load_raw_temp(raw_temp_filepath: str) -> pd.DataFrame:
-
-	raw_temp = pd.read_csv(raw_temp_filepath,
-                            index_col=0,
-                            parse_dates=True)
-
-	return raw_temp
+    #TODO: ADD DOCSTRING
+    raw_temp = pd.read_csv(raw_temp_filepath,
+        index_col=0,
+        parse_dates=True)
+    return raw_temp
 
 
 def format_dataframe(raw_data:pd.DataFrame, col_mapper: dict, years:list) -> pd.DataFrame:
-
+    #TODO: ADD DOCSTRING
     # make new dataframe
     cleaned_data = raw_data.copy()
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_percentage_error
+from sklearn.metrics import r2_score as r2, mean_squared_error as mse, mean_absolute_percentage_error as mape
 
 def evaluate(config: dict) -> None:
 
@@ -19,18 +19,21 @@ def evaluate(config: dict) -> None:
 		labels = pd.read_csv(config[f"{dataset}_labels_file"], index_col='Datetime', parse_dates=True)
 		
 		# make predictions
-		predictions = model.predict(features)
+		predictions = model.predict(features.values)
 
 		# get metrics
-		summary[f"{dataset}-rmse"] = mean_squared_error(labels, predictions,squared=False)
-		summary[f"{dataset}-mape"] = mean_absolute_percentage_error(labels, predictions)
-		summary[f"{dataset}-r2"] = r2_score(labels, predictions)
+		summary[f"{dataset}-rmse"] = mse(labels.values, predictions, squared=False)
+		summary[f"{dataset}-mape"] = mape(labels.values, predictions)
+		summary[f"{dataset}-r2"] = r2(labels.values, predictions)
 
-		# get peak hours 
-		peak_hours = labels > np.percentile(labels,75)
-		summary[f"{dataset}-rmse-25"] = mean_squared_error(labels[peak_hours], predictions[peak_hours],squared=False)
-		summary[f"{dataset}-mape-25"] = mean_absolute_percentage_error(labels[peak_hours], predictions[peak_hours])
-		summary[f"{dataset}-r2-25"] = r2_score(labels[peak_hours], predictions[peak_hours])
+		# get peak hour metrics 
+		peak_hours = labels.values > np.percentile(labels,75)
+		summary[f"{dataset}-rmse-25"] = mse(labels.values[peak_hours], 
+			predictions[peak_hours],squared=False)
+		summary[f"{dataset}-mape-25"] = mape(labels.values[peak_hours],
+			predictions[peak_hours])
+		summary[f"{dataset}-r2-25"] = r2(labels.values[peak_hours], 
+			predictions[peak_hours])
 	
 	# write summary to csv
 	summary.to_csv(config["ann_summary_file"], header=False)
