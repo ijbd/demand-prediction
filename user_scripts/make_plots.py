@@ -3,11 +3,18 @@ from matplotlib.ticker import MaxNLocator
 import pandas as pd
 import os
 
-THIS_DIR = os.path.dirname(__file__)
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(os.path.dirname(THIS_DIR), "output")
 GALLERY_DIR = os.path.join(os.path.dirname(THIS_DIR), "gallery")
 
 BALANCING_AUTHORITIES = ["CISO", "ERCO", "MISO", "PGE", "PJM", "SOCO", "SWPP"]
+
+def plot_temp_demand(ax, temp_demand: pd.DataFrame):
+    ax.scatter(temp_demand["Temperature (K)"], temp_demand["Demand (MW)"], s=1)
+    ax.set_xlabel("Temperature (K)")
+    ax.set_ylabel("Demand (MW)")
+
+    return None
 
 def plot_prediction_series(ax, pred: pd.DataFrame):
     ax.plot(pred["labels"].values)
@@ -42,6 +49,20 @@ def make_plots():
     plt.tight_layout()
 
     for bal_auth in BALANCING_AUTHORITIES:
+        # plot temp-demand
+        temp_demand_file = os.path.join(OUTPUT_DIR, f"{bal_auth}_cleaned_data.csv")
+        temp_demand = pd.read_csv(temp_demand_file, index_col="Datetime")
+
+        fig, ax = plt.subplots()
+        
+        plot_temp_demand(ax, temp_demand)
+        ax.set_title(f"{bal_auth} Temperature versus Demand")
+        
+            # save and close
+        temp_demand_plot_file = os.path.join(GALLERY_DIR, f"{bal_auth}_temp_demand.png")
+        plt.savefig(temp_demand_plot_file)
+        plt.close()
+
         # plot predictions
         pred_file = os.path.join(OUTPUT_DIR, f"{bal_auth}_ann_test_predictions.csv")
         pred = pd.read_csv(pred_file, index_col="Datetime")
