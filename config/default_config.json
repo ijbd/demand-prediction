@@ -24,7 +24,6 @@
 	"hyperparameter_search_name": "default_search",
 	"ann_model_file": "{PROJECT_DIR}/data/03_models/{BAL_AUTH}/ann.model",
 	"ann_history_file": "{PROJECT_DIR}/data/03_models/{BAL_AUTH}/ann_history.csv",
-	"ann_hyperparameters_file": "{PROJECT_DIR}/data/03_models/{BAL_AUTH}/ann_hyperparameters.csv",
-	"ann_summary_file": "{PROJECT_DIR}/data/03_models/{BAL_AUTH}/ann_summary.csv"
-
+	"ann_summary_file": "{PROJECT_DIR}/data/03_models/{BAL_AUTH}/ann_summary.csv",
+	"ann_test_predictions_file": "{PROJECT_DIR}/data/03_models/{BAL_AUTH}/ann_test_predictions.csv"
 }

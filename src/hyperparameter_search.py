@@ -149,7 +149,7 @@ def hyperparameter_search(config: dict) -> None:
 	# get metadata from best model
 	best_hyperparameters = get_best_hyperparameters(tuner)
 	best_hyperparameters_series = extract_hyperparameters_to_series(best_hyperparameters)
-	best_hyperparameters_series.to_csv(config["ann_hyperparameters_file"], header=False)
+	best_hyperparameters_series.to_csv(config["ann_summary_file"], header=False)
 	
 	# save model, history, and hyperparameters
 	model = model_builder.build_model_from_hyperparameters(best_hyperparameters)

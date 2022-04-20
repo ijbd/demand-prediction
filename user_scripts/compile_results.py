@@ -5,14 +5,16 @@ import argparse
 
 def compile_results(project_dir, compilation_dir):
     all_models_dir = os.path.join(project_dir, "data", "03_models")
+    
     for model_name in os.listdir(all_models_dir):
         model_dir = os.path.join(all_models_dir, model_name)
 
-        # compile summary, history, and hyperparameter files
-        for output in ["summary", "history", "hyperparameters"]:
-            source_path = os.path.join(model_dir, f"ann_{output}.csv")
-            dest_path = os.path.join(compilation_dir, f"{model_name}_ann_{output}.csv")
-            shutil.copy(source_path, dest_path)
+        # copy history file and model
+        source_path = os.path.join(model_dir, f"ann_history.csv")
+        dest_path = os.path.join(compilation_dir, f"{model_name}_ann_history.csv")
+        shutil.copy(source_path, dest_path)
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
