@@ -6,14 +6,19 @@ import argparse
 def compile_results(project_dir, compilation_dir):
     all_models_dir = os.path.join(project_dir, "data", "03_models")
     
-    for model_name in os.listdir(all_models_dir):
-        model_dir = os.path.join(all_models_dir, model_name)
+    for bal_auth in os.listdir(all_models_dir):
+        model_dir = os.path.join(all_models_dir, bal_auth)
 
-        # copy history file and model
+        # copy history, summary, and predictions file from model
         for output in ["history", "summary", "test_predictions"]:
             source_path = os.path.join(model_dir, f"ann_{output}.csv")
-            dest_path = os.path.join(compilation_dir, f"{model_name}_ann_{output}.csv")
+            dest_path = os.path.join(compilation_dir, f"{bal_auth}_ann_{output}.csv")
             shutil.copy(source_path, dest_path)
+
+        # copy cleaned_data
+        source_path = os.path.join(project_dir, "data", "01_cleaned", f"{bal_auth}_cleaned.csv")
+        dest_path = os.path.join(compilation_dir, f"{bal_auth}_cleaned_data.csv")
+        shutil.copy(source_path, dest_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
