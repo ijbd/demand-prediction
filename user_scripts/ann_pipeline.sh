@@ -3,9 +3,9 @@
 # input check
 if [ "$#" -ne 1 ]; then
     echo "Missing arguments for setup_pipeline.sh"
-	echo ""
-	echo "bash setup_pipeline.sh <bal_authority>"
-	exit 1
+    echo ""
+    echo "bash setup_pipeline.sh <bal_authority>"
+    exit 1
 fi
 
 # parameters
@@ -21,6 +21,11 @@ MODEL_DIR=$PROJECT_DIR/data/03_models/$BAL_AUTH
 CONFIG_FILE=$MODEL_DIR/config.json
 
 # setup file structure
+if [ ! -d $PROJECT_DIR ]; then
+    echo "Project directory does not exist: $PROJECT_DIR"
+    exit 1
+fi
+
 mkdir -p $RAW_DATA_DIR
 mkdir -p $CLEANED_DATA_DIR
 mkdir -p $PROCESSED_DATA_DIR
