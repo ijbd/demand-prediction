@@ -24,28 +24,36 @@ The following libraries are used in this project:
 
 To install the required libraries in a virtual environment:
 
-		pip install keras-tuner==1.1.2
-		pip install pandas==1.4.2
-		pip install tensorflow==2.8.0
-		pip install sklearn
+		python -m venv env
+		source env/bin/activate
+		python -m pip install -r requirements.txt
 
-To run the ANN pipeline on the University of Michigan ARC Great Lakes computing cluster, the project directory should be changed in the `default_config.json` to a reasonable location (such Turbo Research Storage). The configuration file contains a parameter template for future models. It defines data filepaths, the hyperparameter search space, and other pipeline inputs.
+To run the ANN pipeline on the University of Michigan ARC Great Lakes computing cluster, the project directory should be changed in the `default_config.json` to a reasonable location (e.g. a directory in Turbo Research Storage). The configuration file contains a parameter template for future models. It defines data filepaths, the hyperparameter search space, and other pipeline inputs.
 
 ## File Descriptions
 
 ### User Scripts
 
 `ann_pipeline_gl.sbat`: Executes `ann_pipeline.sh`, invoking SLURM on Great Lakes.
+
 `ann_pipeline.sh`: Builds config file and file structure, then executes `ann_pipeline.py`.
+
 `compile_results.py`: Collects results from top-level project directory to single folder.
+
 `make_plots.py`: Statically generates figures for several balancing authorities.
 
 ### Data & Model (src)
 
 `ann_pipeline.py`: Downloads and processes data, builds ANN, conducts a hyperparameter search, and saves results.
+
 `download_data.py`: Module to download temperature and demand data from their respective git repositories.
+
 `clean_data.py`: Module to reformat raw downloaded data to full, consistent data files.
+
 `process_data.py`: Module to feature engineer and split data into training, validation, and test datasets.
+
 `model.py`: Module for building ANN with TensorFlow.
+
 `hyperparameter_search.py`: Module to conduct hyperparameter search with Keras Tuner.
+
 `evaluate.py`: Module to compile evaluation metrics into a DataFrame.
